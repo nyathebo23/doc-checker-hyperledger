@@ -1,0 +1,27 @@
+
+[
+    {
+    "name": "ENSPYMSPPrivateCollection",
+    "policy": "OR('ENSPY_MSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 1,
+    "blockToLive":0,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": false,
+    "endorsementPolicy": {
+        "signaturePolicy": "OR('ENSPY_MSP.member')"
+    }
+    },
+    {
+    "name": "ENSPDMSPPrivateCollection",
+    "policy": "OR('ENSPD_MSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 1,
+    "blockToLive":0,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": false,
+    "endorsementPolicy": {
+        "signaturePolicy": "OR('ENSPD_MSP.member')"
+    }
+    }
+ ]

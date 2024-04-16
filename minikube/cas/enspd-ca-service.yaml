@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: enspd-ca-service
+  labels: {
+    component: enspd,
+    type: ca
+  }
+spec:
+  type: ClusterIP
+  selector:
+    component: enspd
+    type: ca
+  ports:
+    - port: 7054
+      targetPort: 7054

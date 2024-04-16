@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: peer1-enspd-couchdb-deployment
+  labels: {
+    component: peer1,
+    type: couchdb,
+    org: enspd
+  }
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: peer1
+      type: couchdb
+      org: enspd
+  template:
+    metadata:
+      labels:
+        component: peer1
+        type: couchdb
+        org: enspd
+    spec:
+      volumes:
+        - name: my-pv-storage
+          persistentVolumeClaim:
+            claimName: my-pv-claim
+      containers:
+        - name: peer1-enspd-couchdb
+          image: couchdb:latest
+          env:
+            - name: COUCHDB_USER
+              value: nick
+            - name: COUCHDB_PASSWORD
+              value: "1234"
+          volumeMounts:
+            - mountPath: /opt/couchdb/data
+              name: my-pv-storage
+              subPath: state/enspd/peers/peer1-couchdb
