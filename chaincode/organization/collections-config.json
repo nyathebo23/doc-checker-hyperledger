@@ -1,0 +1,17 @@
+
+[
+    {
+        "name": "ENSPYMSPPrivateCollection",
+        "policy": "OR('enspy.member')",
+        "requiredPeerCount": 0,
+        "maxPeerCount": 1,
+        "blockToLive":0
+    },
+    {
+        "name": "ENSPDMSPPrivateCollection",
+        "policy": "OR('enspd.member')",
+        "requiredPeerCount": 0,
+        "maxPeerCount": 1,
+        "blockToLive":0
+    }
+]

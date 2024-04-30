@@ -24,14 +24,14 @@ func (rc *OrganizationsContract) Transactions(
 		}
 
 		var org Organization
-		if err = json.Unmarshal(val.Value, &res); err != nil {
+		if err = json.Unmarshal(val.Value, &org); err != nil {
 			return nil, err
 		}
 
 		rets = append(rets, &OrganizationTransactionItem{
-			TXID:      val.TxId,
-			Timestamp: int64(val.Timestamp.GetNanos()),
-			Organization:  org,
+			TXID:         val.TxId,
+			Timestamp:    int64(val.Timestamp.GetNanos()),
+			Organization: org,
 		})
 	}
 

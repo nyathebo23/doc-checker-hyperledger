@@ -24,7 +24,7 @@ func (rc *DocumentSavesContract) Transactions(
 		}
 
 		var docSave DocumentSave
-		if err = json.Unmarshal(val.Value, &res); err != nil {
+		if err = json.Unmarshal(val.Value, &docSave); err != nil {
 			return nil, err
 		}
 

@@ -10,12 +10,8 @@ import (
 func (rc *BeneficiarysContract) Index(
 	ctx contractapi.TransactionContextInterface,
 ) (rets []*Beneficiary, err error) {
-	mspID, err := ctx.GetClientIdentity().GetMSPID()
-	if err != nil {
-		return
-	}
 
-	resultsIterator, _, err := ctx.GetStub().GetQueryResultWithPagination(`{"selector": {"id":{"$ne":"-"},"owner":"`+mspID+`"}}`, 0, "")
+	resultsIterator, _, err := ctx.GetStub().GetQueryResultWithPagination(`{"selector": {"id":{"$ne":"-"}}}`, 0, "")
 	if err != nil {
 		return
 	}

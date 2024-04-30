@@ -24,7 +24,7 @@ spec:
             claimName: my-pv-claim
       containers:
         - name: enspy-ca-client
-          image: hyperledger/fabric-ca:1.4.7
+          image: hyperledger/fabric-ca:1.5.7
           command: ["bash"]
           args: ["/scripts/start-org-client.sh"]
           env:

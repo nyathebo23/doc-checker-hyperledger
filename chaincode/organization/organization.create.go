@@ -9,7 +9,7 @@ import (
 )
 
 // Create adds a new id with value to the world state
-func (rc *OrganizationContract) Create(
+func (rc *OrganizationsContract) Create(
 	ctx contractapi.TransactionContextInterface,
 	id string,
 	title string,
@@ -31,10 +31,10 @@ func (rc *OrganizationContract) Create(
 	}
 
 	newOrganization := &Organization{
-		ID:     id,
-		Name:   name
-		Title:   title, // TODO: Verify this name is unique
-		IsActive:   active
+		ID:       id,
+		Name:     name,
+		Title:    title, // TODO: Verify this name is unique
+		IsActive: active,
 	}
 
 	bytes, err := json.Marshal(newOrganization)

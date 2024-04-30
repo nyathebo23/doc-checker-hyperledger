@@ -24,7 +24,7 @@ spec:
             claimName: my-pv-claim
       containers:
         - name: enspd-ca
-          image: hyperledger/fabric-ca:1.4.7
+          image: hyperledger/fabric-ca:1.5.7
           command: ["sh"]
           args: ["/scripts/start-root-ca.sh"]
           ports:

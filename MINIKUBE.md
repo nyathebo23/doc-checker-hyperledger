@@ -11,10 +11,10 @@ Okay, now that we've successfully ran the network locally, let's do this on a lo
 ```bash
 minikube start --memory=4g --cpus=4
 sleep 5
-kubectl apply -f network/minikube/storage/pvc.yaml
+kubectl apply -f minikube/storage/pvc.yaml
 sleep 10
-kubectl apply -f network/minikube/storage/tests
-kubectl apply -f network/minikube/orgs/ibm/couchdb/peer0-couchdb-deployment.yaml
+kubectl apply -f minikube/storage/tests
+kubectl apply -f minikube/orgs/enspy/couchdb/peer0-couchdb-deployment.yaml
 ```
 
 Now we have storage and we're going to test it. You can do a kubectl get pods to see what pods are up. Here's how I can connect to my containers. You should split your terminal and connect to both.
@@ -49,13 +49,13 @@ kubectl exec -it $(kubectl get pods -o=name | grep example1 | sed "s/^.\{4\}//")
 
 Finally ready to start the ca containers
 ```bash
-kubectl apply -f network/minikube/cas/orderers-ca-deployment.yaml
-kubectl apply -f network/minikube/cas/ibm-ca-deployment.yaml
-kubectl apply -f network/minikube/cas/oracle-ca-deployment.yaml
+kubectl apply -f minikube/cas/orderers-ca-deployment.yaml
+kubectl apply -f minikube/cas/enspy-ca-deployment.yaml
+kubectl apply -f minikube/cas/enspd-ca-deployment.yaml
 
 sleep 30
 
-kubectl apply -f network/minikube/cas
+kubectl apply -f minikube/cas
 ```
 
 Your containers should be up and running. You can check the logs like so and it should look liek this.
@@ -80,14 +80,14 @@ root@example1-6858b4f776-wmlth:/host/files/crypto-config# ls
 ordererOrganizations  peerOrganizations
 root@example1-6858b4f776-wmlth:/host/files/crypto-config# cd peerOrganizations/
 root@example1-6858b4f776-wmlth:/host/files/crypto-config/peerOrganizations# ls
-ibm  oracle
-root@example1-6858b4f776-wmlth:/host/files/crypto-config/peerOrganizations# cd ibm/
-root@example1-6858b4f776-wmlth:/host/files/crypto-config/peerOrganizations/ibm# ls
+enspy  enspd
+root@example1-6858b4f776-wmlth:/host/files/crypto-config/peerOrganizations# cd enspy/
+root@example1-6858b4f776-wmlth:/host/files/crypto-config/peerOrganizations/enspy# ls
 msp  peers  users
-root@example1-6858b4f776-wmlth:/host/files/crypto-config/peerOrganizations/ibm# cd msp/
-root@example1-6858b4f776-wmlth:/host/files/crypto-config/peerOrganizations/ibm/msp# ls
+root@example1-6858b4f776-wmlth:/host/files/crypto-config/peerOrganizations/enspy# cd msp/
+root@example1-6858b4f776-wmlth:/host/files/crypto-config/peerOrganizations/enspy/msp# ls
 IssuerPublicKey  IssuerRevocationPublicKey  admincerts	cacerts  keystore  signcerts  tlscacerts  user
-root@example1-6858b4f776-wmlth:/host/files/crypto-config/peerOrganizations/ibm/msp# cd tlscacerts/
+root@example1-6858b4f776-wmlth:/host/files/crypto-config/peerOrganizations/enspy/msp# cd tlscacerts/
 ```
 
 Time to generate the artifacts inside one of the containers and in the files folder - NOTE: if you are on OSX you might have to load the proper libs `curl -sSL https://bit.ly/2ysbOFE | bash -s -- 2.2.1 1.4.7` (apt update then apt install curl) (you will also need to cp from (this path will depend on where you are in the container) cp bin/* /host/files/bin)
@@ -100,15 +100,15 @@ rm -rf orderer channels
 mkdir -p orderer channels
 bin/configtxgen -profile OrdererGenesis -channelID syschannel -outputBlock ./orderer/genesis.block
 bin/configtxgen -profile MainChannel -outputCreateChannelTx ./channels/mainchannel.tx -channelID mainchannel
-bin/configtxgen -profile MainChannel -outputAnchorPeersUpdate ./channels/ibm-anchors.tx -channelID mainchannel -asOrg ibm
-bin/configtxgen -profile MainChannel -outputAnchorPeersUpdate ./channels/oracle-anchors.tx -channelID mainchannel -asOrg oracle
+bin/configtxgen -profile MainChannel -outputAnchorPeersUpdate ./channels/enspy-anchors.tx -channelID mainchannel -asOrg enspy
+bin/configtxgen -profile MainChannel -outputAnchorPeersUpdate ./channels/enspd-anchors.tx -channelID mainchannel -asOrg enspd
 ```
 
 Let's try to start up the orderers
 ```bash
-kubectl apply -f network/minikube/orderers/orderer0-deployment.yaml
+kubectl apply -f minikube/orderers/orderer0-deployment.yaml
 
-kubectl apply -f network/minikube/orderers
+kubectl apply -f minikube/orderers
 ```
 
 Go ahead and check the logs and see that the orderers have selected a leader like so
@@ -121,96 +121,139 @@ Go ahead and check the logs and see that the orderers have selected a leader lik
 
 We should be able to start the peers now
 ```bash
-kubectl apply -f network/minikube/orgs/ibm/couchdb 
-kubectl apply -f network/minikube/orgs/oracle/couchdb
+kubectl apply -f minikube/orgs/enspy/couchdb 
+kubectl apply -f minikube/orgs/enspd/couchdb
 
-kubectl apply -f network/minikube/orgs/ibm/
-kubectl apply -f network/minikube/orgs/oracle/
+kubectl apply -f minikube/orgs/enspy/
+kubectl apply -f minikube/orgs/enspd/
 
-kubectl apply -f network/minikube/orgs/ibm/cli
-kubectl apply -f network/minikube/orgs/oracle/cli
-kubectl delete -f network/minikube/storage/tests
-kubectl delete -f network/minikube/cas/ibm-ca-client-deployment.yaml
-kubectl delete -f network/minikube/cas/oracle-ca-client-deployment.yaml
-kubectl delete -f network/minikube/cas/orderers-ca-client-deployment.yaml
+kubectl apply -f minikube/orgs/enspy/cli
+kubectl apply -f minikube/orgs/enspd/cli
+kubectl delete -f minikube/storage/tests
+kubectl delete -f minikube/cas/enspy-ca-client-deployment.yaml
+kubectl delete -f minikube/cas/enspd-ca-client-deployment.yaml
+kubectl delete -f minikube/cas/orderers-ca-client-deployment.yaml
 ```
 
 NOTE: you can stop the cas if you don't need them anymore (don't do this if you want to continue making certs later)
 - minikube only has so many resources so sometimes when testing you might need to decide what containers are more important
 ```bash
-kubectl delete -f network/minikube/cas
+kubectl delete -f minikube/cas
 ```
 
 
 Time to actually test the network
 ```bash
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel create -c mainchannel -f ./channels/mainchannel.tx -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel create -c mainchannel -f ./channels/mainchannel.tx -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
 
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'cp mainchannel.block ./channels/'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel join -b channels/mainchannel.block'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel join -b channels/mainchannel.block'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel join -b channels/mainchannel.block'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel join -b channels/mainchannel.block'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'cp mainchannel.block ./channels/'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel join -b channels/mainchannel.block'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel join -b channels/mainchannel.block'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel join -b channels/mainchannel.block'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel join -b channels/mainchannel.block'
 
 sleep 5
 
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel update -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem -c mainchannel -f channels/ibm-anchors.tx'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel update -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem -c mainchannel -f channels/oracle-anchors.tx'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel update -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem -c mainchannel -f channels/enspy-anchors.tx'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer channel update -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem -c mainchannel -f channels/enspd-anchors.tx'
 ```
 
 Now we are going to install the chaincode - NOTE: Make sure you go mod vendor in each chaincode folder... might need to remove the go.sum depending
 ```bash
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package resource_types.tar.gz --path /opt/gopath/src/resource_types --lang golang --label resource_types_1'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package resource_types.tar.gz --path /opt/gopath/src/resource_types --lang golang --label resource_types_1'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package resource_types.tar.gz --path /opt/gopath/src/resource_types --lang golang --label resource_types_1'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package resource_types.tar.gz --path /opt/gopath/src/resource_types --lang golang --label resource_types_1'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package beneficiary.tar.gz --path /opt/gopath/src/beneficiary --lang golang --label beneficiary_1'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package beneficiary.tar.gz --path /opt/gopath/src/beneficiary --lang golang --label beneficiary_1'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package beneficiary.tar.gz --path /opt/gopath/src/beneficiary --lang golang --label beneficiary_1'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package beneficiary.tar.gz --path /opt/gopath/src/beneficiary --lang golang --label beneficiary_1'
 
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install resource_types.tar.gz &> pkg.txt'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install resource_types.tar.gz'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install resource_types.tar.gz &> pkg.txt'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install resource_types.tar.gz'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install beneficiary.tar.gz &> pkg.txt'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install beneficiary.tar.gz'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install beneficiary.tar.gz &> pkg.txt'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install beneficiary.tar.gz'
 
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode approveformyorg -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --channelID mainchannel --collections-config /opt/gopath/src/resource_types/collections-config.json --name resource_types --version 1.0 --sequence 1 --package-id $(tail -n 1 pkg.txt | awk '\''NF>1{print $NF}'\'')'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode approveformyorg -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --collections-config /opt/gopath/src/resource_types/collections-config.json --channelID mainchannel --name resource_types --version 1.0 --sequence 1 --package-id $(tail -n 1 pkg.txt | awk '\''NF>1{print $NF}'\'')'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode approveformyorg -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --channelID mainchannel --collections-config /opt/gopath/src/beneficiary/collections-config.json --name beneficiary --version 1.0 --sequence 1 --package-id $(tail -n 1 pkg.txt | awk '\''NF>1{print $NF}'\'')'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode approveformyorg -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --collections-config /opt/gopath/src/beneficiary/collections-config.json --channelID mainchannel --name beneficiary --version 1.0 --sequence 1 --package-id $(tail -n 1 pkg.txt | awk '\''NF>1{print $NF}'\'')'
 
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode commit -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --channelID mainchannel --collections-config /opt/gopath/src/resource_types/collections-config.json --name resource_types --version 1.0 --sequence 1'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode commit -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --channelID mainchannel --collections-config /opt/gopath/src/beneficiary/collections-config.json --name beneficiary --version 1.0 --sequence 1'
+
+
 ```
-
 Lets go ahead and test this chaincode
 ```bash
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode invoke -C mainchannel -n resource_types -c '\''{"Args":["Create", "1","Parts"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+
+
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode invoke -C mainchannel -n beneficiary -c '\''{"Args":["Create", "1","Nyatchou", "Franck", "franckhebo@gmail.com", "Jonathan23"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
 sleep 5
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode query -C mainchannel -n resource_types -c '\''{"Args":["Index"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode query -C mainchannel -n beneficiary -c '\''{"Args":["Index"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+
+
+
 ```
+Chaincode for organization
+```bash
+
+
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package organization.tar.gz --path /opt/gopath/src/organization --lang golang --label organization_1'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package organization.tar.gz --path /opt/gopath/src/organization --lang golang --label organization_1'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package organization.tar.gz --path /opt/gopath/src/organization --lang golang --label organization_1'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package organization.tar.gz --path /opt/gopath/src/organization --lang golang --label organization_1'
+
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install organization.tar.gz &> pkg.txt'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install organization.tar.gz'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install organization.tar.gz &> pkg.txt'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install organization.tar.gz'
+
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode approveformyorg -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --channelID mainchannel --collections-config /opt/gopath/src/organization/collections-config.json --name organization --version 1.0 --sequence 1 --package-id $(tail -n 1 pkg.txt | awk '\''NF>1{print $NF}'\'')'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode approveformyorg -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --collections-config /opt/gopath/src/organization/collections-config.json --channelID mainchannel --name organization --version 1.0 --sequence 1 --package-id $(tail -n 1 pkg.txt | awk '\''NF>1{print $NF}'\'')'
+
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode commit -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --channelID mainchannel --collections-config /opt/gopath/src/organization/collections-config.json --name organization --version 1.0 --sequence 1'
+
+
+```
+Lets go ahead and test this chaincode
+```bash
+
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode invoke -C mainchannel -n organization -c '\''{"Args":["Create", "2","ENSPD", "Ecole Nationale Polytechnique", "true"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+sleep 5
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode query -C mainchannel -n organization -c '\''{"Args":["Index"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+```
+
+
+
+
 
 Lets try the other chaincode
 ```bash
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package resources.tar.gz --path /opt/gopath/src/resources --lang golang --label resources_1'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package resources.tar.gz --path /opt/gopath/src/resources --lang golang --label resources_1'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package resources.tar.gz --path /opt/gopath/src/resources --lang golang --label resources_1'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package resources.tar.gz --path /opt/gopath/src/resources --lang golang --label resources_1'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package document_save.tar.gz --path /opt/gopath/src/document_save --lang golang --label document_save_1'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package document_save.tar.gz --path /opt/gopath/src/document_save --lang golang --label document_save_1'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package document_save.tar.gz --path /opt/gopath/src/document_save --lang golang --label document_save_1'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode package document_save.tar.gz --path /opt/gopath/src/document_save --lang golang --label document_save_1'
 
 
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install resources.tar.gz &> pkg.txt'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install resources.tar.gz'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install resources.tar.gz &> pkg.txt'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install resources.tar.gz'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install document_save.tar.gz &> pkg.txt'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install document_save.tar.gz'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install document_save.tar.gz &> pkg.txt'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode install document_save.tar.gz'
 
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode approveformyorg -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --channelID mainchannel --collections-config /opt/gopath/src/resources/collections-config.json --name resources --version 1.0 --sequence 1 --package-id $(tail -n 1 pkg.txt | awk '\''NF>1{print $NF}'\'')'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode approveformyorg -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --channelID mainchannel --collections-config /opt/gopath/src/resources/collections-config.json --name resources --version 1.0 --sequence 1 --package-id $(tail -n 1 pkg.txt | awk '\''NF>1{print $NF}'\'')'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode approveformyorg -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --channelID mainchannel --collections-config /opt/gopath/src/document_save/collections-config.json --name document_save --version 1.0 --sequence 1 --package-id $(tail -n 1 pkg.txt | awk '\''NF>1{print $NF}'\'')'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode approveformyorg -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --channelID mainchannel --collections-config /opt/gopath/src/document_save/collections-config.json --name document_save --version 1.0 --sequence 1 --package-id $(tail -n 1 pkg.txt | awk '\''NF>1{print $NF}'\'')'
 
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode commit -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --channelID mainchannel --collections-config /opt/gopath/src/resources/collections-config.json --name resources --version 1.0 --sequence 1'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer lifecycle chaincode commit -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem --channelID mainchannel --collections-config /opt/gopath/src/document_save/collections-config.json --name document_save --version 1.0 --sequence 1'
 
 sleep 5
 
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode invoke -C mainchannel -n resources -c '\''{"Args":["Create","","CPUs","1"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode invoke -C mainchannel -n resources -c '\''{"Args":["Create","","Database Servers","1"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode invoke -C mainchannel -n resources -c '\''{"Args":["Create","","Mainframe Boards","1"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode invoke -C mainchannel -n document_save -c '\''{"Args":["Create","","CPUs","1"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode invoke -C mainchannel -n document_save -c '\''{"Args":["Create","","Database Servers","1"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode invoke -C mainchannel -n document_save -c '\''{"Args":["Create","","Mainframe Boards","1"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
 sleep 5
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode query -C mainchannel -n resources -c '\''{"Args":["Index"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-ibm-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode query -C mainchannel -n resources -c '\''{"Args":["Index"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode query -C mainchannel -n resources -c '\''{"Args":["Index"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
-kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-oracle-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode query -C mainchannel -n resources -c '\''{"Args":["Index"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode query -C mainchannel -n document_save -c '\''{"Args":["Index"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode query -C mainchannel -n document_save -c '\''{"Args":["Index"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode query -C mainchannel -n document_save -c '\''{"Args":["Index"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer1-enspd-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode query -C mainchannel -n document_save -c '\''{"Args":["Index"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+
+
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode invoke -C mainchannel -n document_save -c '\''{"Args":["Create", "1","1", "1", "filepoh.pdf", "tyre44scsds545ds54fdsfjdsjhj"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
+sleep 5
+kubectl exec -it $(kubectl get pods -o=name | grep cli-peer0-enspy-deployment | sed "s/^.\{4\}//") -- bash -c 'peer chaincode query -C mainchannel -n document_save -c '\''{"Args":["Index"]}'\'' -o orderer0-service:7050 --tls --cafile=/etc/hyperledger/orderers/msp/tlscacerts/orderers-ca-service-7054.pem'
 ```
 
 Start the API
@@ -226,14 +269,14 @@ minikube service api-service-nodeport --url
 ## How to delete everything
 ```bash
 kubectl delete -f network/minikube/backend
-kubectl delete -f network/minikube/orgs/ibm/couchdb 
-kubectl delete -f network/minikube/orgs/oracle/couchdb
+kubectl delete -f network/minikube/orgs/enspy/couchdb 
+kubectl delete -f network/minikube/orgs/enspd/couchdb
 
-kubectl delete -f network/minikube/orgs/ibm/
-kubectl delete -f network/minikube/orgs/oracle/
+kubectl delete -f network/minikube/orgs/enspy/
+kubectl delete -f network/minikube/orgs/enspd/
 
-kubectl delete -f network/minikube/orgs/ibm/cli
-kubectl delete -f network/minikube/orgs/oracle/cli
+kubectl delete -f network/minikube/orgs/enspy/cli
+kubectl delete -f network/minikube/orgs/enspd/cli
 kubectl delete -f network/minikube/cas
 kubectl delete -f network/minikube/orderers
 ```

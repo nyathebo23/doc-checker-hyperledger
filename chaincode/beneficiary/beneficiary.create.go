@@ -3,12 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
 // Create adds a new id with value to the world state
-func (rc *OrganizationContract) Create(
+func (rc *BeneficiarysContract) Create(
 	ctx contractapi.TransactionContextInterface,
 	id string,
 	firstname string,
@@ -31,11 +32,11 @@ func (rc *OrganizationContract) Create(
 	}
 
 	newUser := &Beneficiary{
-		ID:     id,
-		Firstname:   firstname
-		Lastname:   lastname, // TODO: Verify this name is unique
-		Email:   email,
-		Password: password
+		ID:        id,
+		Firstname: firstname,
+		Lastname:  lastname, // TODO: Verify this name is unique
+		Email:     email,
+		Password:  password,
 	}
 
 	bytes, err := json.Marshal(newUser)

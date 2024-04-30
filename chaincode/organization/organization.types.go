@@ -11,7 +11,7 @@ type Organization struct {
 
 // ResourceTypeTransactionItem transaction item
 type OrganizationTransactionItem struct {
-	TXID         string            `json:"tx_id"`
-	Organization ResourceTypeIndex `json:"organization"`
-	Timestamp    int64             `json:"timestamp"`
+	TXID         string       `json:"tx_id"`
+	Organization Organization `json:"organization"`
+	Timestamp    int64        `json:"timestamp"`
 }
