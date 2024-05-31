@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+    "time"
     "github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
     "github.com/hyperledger/fabric/common/util"
@@ -92,12 +93,15 @@ func (rc *DocumentSavesContract) Create(ctx contractapi.TransactionContextInterf
 		return fmt.Errorf("Cannot create world state pair with id %s. Already exists", docSaveInput.ID)
 	}
 
+    t := time.Now()
+
 	newDocumentSave := &DocumentSave{
 		ID:     docSaveInput.ID,
 		Filename:      docSaveInput.Filename,
 		OrganizationId:   docSaveInput.OrganizationId, // TODO: Verify this name is unique
 		BeneficiaryId:   docSaveInput.BeneficiaryId,
 		Hash: 	docSaveInput.Hash,
+        SaveDate: &t
 	}
 
     // Get ID of submitting client identity
